@@ -6,9 +6,9 @@ from torch.optim import SGD, Adam, AdamW, Adagrad, Adadelta, SparseAdam, ASGD, R
 from torch.utils.data import DataLoader
 from torch.nn import CrossEntropyLoss
 
-from classifier import GarmentClassifier
-from train import Training
-from plots import plot_losses
+from src.classifier import GarmentClassifier
+from src.train import Training
+from src.plots import plot_losses
 
 # TODO: Need to define what a "FAIR" comparison is between optimizers
 # TODO: Need to select the ones that are "made to fit" for the problem
@@ -32,7 +32,7 @@ def get_model_optim(Optimizer, device, **kwargs):
 
 if __name__ == '__main__':
 
-    from lion_pytorch.lion_pytorch import Lion
+    from lion.lion import Lion
     from Sophia.sophia import SophiaG
 
     lr = 0.0001
