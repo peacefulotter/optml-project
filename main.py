@@ -32,8 +32,8 @@ def get_model_optim(Optimizer, device, **kwargs):
 
 if __name__ == '__main__':
 
-    from lion.lion import Lion
-    from Sophia.sophia import SophiaG
+    from lion import Lion
+    from Sophia import SophiaG
 
     lr = 0.0001
     momentum = 0.9

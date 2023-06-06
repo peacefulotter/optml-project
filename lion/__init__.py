@@ -1,1 +1,1 @@
-from lion import Lion
+from lion.lion import Lion
