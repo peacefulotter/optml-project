@@ -52,10 +52,10 @@ if __name__ == '__main__':
     validation_loader = get_loader(train=False, shuffle=False)
 
     optimizers = [SophiaG, Lion, Adam, AdamW]
-    models_optimizers = [get_model_optim(optim, device) for optim in optimizers]
     criterion = CrossEntropyLoss()
 
-    for model, optim in models_optimizers:   
+    for OptimClass in optimizers:   
+        model, optim = get_model_optim(OptimClass, device)
         optim_name = type(optim).__name__
         tr_loss, ev_loss = Training.train(model, optim, criterion, training_loader, validation_loader, epochs=epochs, name=optim_name, device=device)
         with torch.no_grad():
