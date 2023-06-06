@@ -17,7 +17,7 @@ class Training:
     
     @staticmethod
     def save_model(model, timestamp, epoch, name):
-        model_path = f'./model/model_{timestamp}_{name}_{epoch}'
+        model_path = f'./models/model_{timestamp}_{name}_{epoch}'
         torch.save(model.state_dict(), model_path)
     
     @staticmethod
