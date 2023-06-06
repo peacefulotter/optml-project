@@ -31,6 +31,10 @@ def get_model_optim(Optimizer, device, **kwargs):
     return model, optim
 
 if __name__ == '__main__':
+
+    from lion_pytorch.lion_pytorch import Lion
+    from Sophia.sophia import SophiaG
+
     lr = 0.0001
     momentum = 0.9
     batch_size = 4 # default batch_size to 4 but GPU can handle way more - nevertheless, an increase of batch size isn't faster somehow
@@ -47,11 +51,11 @@ if __name__ == '__main__':
     training_loader = get_loader(train=True, shuffle=True)
     validation_loader = get_loader(train=False, shuffle=False)
 
-    optimizers = [SGD, Adam, AdamW, Adagrad, Adadelta, SparseAdam, ASGD, RAdam, NAdam, Adamax]
+    optimizers = [SophiaG, Lion, Adam, AdamW]
     models_optimizers = [get_model_optim(optim, device) for optim in optimizers]
     criterion = CrossEntropyLoss()
 
-    for [model, optim] in models_optimizers:   
+    for model, optim in models_optimizers:   
         optim_name = type(optim).__name__
         losses = Training.train(model, optim, criterion, training_loader, validation_loader, epochs=epochs, name=optim_name, device=device)
         with torch.no_grad():
