@@ -2,9 +2,9 @@
 import matplotlib.pyplot as plt
 
 def plot_losses(losses, name, save=False):
-    fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(10,3))
-    axes[0].plot(range(losses.shape[1]), losses[0])
-    axes[1].plot(range(losses.shape[1]), losses[1])
+    _, axes = plt.subplots(nrows=1, ncols=len(losses), figsize=(10,3))
+    for i, loss in enumerate(losses): 
+        axes[i].plot(range(loss.shape[0]), loss)
     plt.tight_layout()
     if save:
         plt.savefig( f'plots/{name}.png', bbox_inches='tight')

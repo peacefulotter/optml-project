@@ -1,7 +1,7 @@
 
 import torch
 
-from torch.utils.tensorboard import SummaryWriter
+# from torch.utils.tensorboard import SummaryWriter
 from datetime import datetime
 
 class Training:
@@ -23,7 +23,7 @@ class Training:
     @staticmethod
     def train_one_epoch(model, dataloader, optim, crit, writer, epoch, device):
         running_loss = 0.
-        last_loss = 0.
+        losses = torch.empty(len(dataloader))
 
         for i, (inputs, labels) in enumerate(dataloader):
             inputs, labels = inputs.to(device), labels.to(device)
@@ -33,40 +33,53 @@ class Training:
             loss.backward()
             optim.step()
 
+            losses[i] = loss.item()
+
             running_loss += loss.item()
             if i % 1000 == 999:
                 last_loss = running_loss / 1000 # loss per batch
                 print('  batch {} loss: {}'.format(i + 1, last_loss))
                 tb_x = epoch * len(dataloader) + i + 1
-                writer.add_scalar('Loss/train', last_loss, tb_x)
+                # writer.add_scalar('Loss/train', last_loss, tb_x)
                 running_loss = 0.
 
-        return last_loss
+        return losses
     
     @staticmethod
-    def train(model, optim, crit, training_dl, validation_dl, epochs, name, device):
+    def train(model, optim, crit, tr_dl, ev_dl, epochs, name, device):
+        """
+        model: nn.Module
+        optim: Optimizer
+        crit: Criterion
+        td_dl: Dataloader (training)
+        ev_dl: Dataload (evaluation)
+        epochs: int
+        name: str
+        device: str (cuda / cpu)
+        """
         timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
-        writer = SummaryWriter(f'runs/training_{name}_{timestamp}')
+        writer = None # SummaryWriter(f'runs/training_{name}_{timestamp}')
 
         best_loss = 1_000_000
 
-        losses = torch.empty((2, epochs))
+        tr_losses = torch.empty((epochs, len(tr_dl)))
+        ev_losses = torch.empty((epochs, len(ev_dl)))
         for epoch in range(epochs):
             print('EPOCH {}:'.format(epoch))
 
-            training_loss = Training.train_one_epoch(model, training_dl, optim, crit, writer, epoch, device)
-            validation_loss = Training.get_validation_loss(model, validation_dl, crit, device)
+            training_loss = Training.train_one_epoch(model, tr_dl, optim, crit, writer, epoch, device)
+            validation_loss = Training.get_validation_loss(model, ev_dl, crit, device)
 
-            losses[0][epoch] = training_loss
-            losses[1][epoch] = validation_loss
-            writer.add_scalars('Training vs. Validation Loss', { 'train' : training_loss, 'validation' : validation_loss }, epoch)
-            writer.flush()
+            tr_losses[epoch] = training_loss
+            ev_losses[epoch] = validation_loss
+            # writer.add_scalars('Training vs. Validation Loss', { 'train' : training_loss, 'validation' : validation_loss }, epoch)
+            # writer.flush()
 
             if validation_loss < best_loss:
                 best_loss = validation_loss
                 Training.save_model(model, timestamp, epoch, name)
                 
-        return losses
+        return torch.flatten(tr_losses), torch.flatten(ev_losses)
 
     
 

@@ -2,7 +2,7 @@ import torch
 import torchvision.transforms as transforms
 
 from torchvision import datasets
-from torch.optim import SGD, Adam, AdamW, Adagrad, Adadelta, SparseAdam, ASGD, RAdam, NAdam, Adamax
+from torch.optim import SGD, Adam, AdamW
 from torch.utils.data import DataLoader
 from torch.nn import CrossEntropyLoss
 
@@ -37,7 +37,7 @@ if __name__ == '__main__':
 
     lr = 0.0001
     momentum = 0.9
-    batch_size = 4 # default batch_size to 4 but GPU can handle way more - nevertheless, an increase of batch size isn't faster somehow
+    batch_size = 4 # default batch_size to 4 but GPU can handle way more
     epochs = 5
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -57,6 +57,6 @@ if __name__ == '__main__':
 
     for model, optim in models_optimizers:   
         optim_name = type(optim).__name__
-        losses = Training.train(model, optim, criterion, training_loader, validation_loader, epochs=epochs, name=optim_name, device=device)
+        tr_loss, ev_loss = Training.train(model, optim, criterion, training_loader, validation_loader, epochs=epochs, name=optim_name, device=device)
         with torch.no_grad():
-            plot_losses(losses, name=optim_name, save=True)
+            plot_losses([tr_loss, ev_loss], name=optim_name, save=True)
