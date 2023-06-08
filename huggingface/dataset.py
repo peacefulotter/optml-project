@@ -10,7 +10,12 @@ text_column_name = "text" if "text" in column_names else column_names[0]
 tokenizer = AutoTokenizer.from_pretrained("bert-base-cased")
 
 def tokenize_function(examples):
-    return tokenizer(examples[text_column_name], return_special_tokens_mask=True)
+    return tokenizer(
+        examples[text_column_name], 
+        truncation=True, 
+        max_seq_length=512, 
+        return_special_tokens_mask=True
+    )
 
 tokenized_datasets = raw_datasets.map(
     tokenize_function,
