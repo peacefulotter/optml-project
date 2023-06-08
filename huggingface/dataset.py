@@ -13,7 +13,7 @@ def tokenize_function(examples):
     return tokenizer(
         examples[text_column_name], 
         truncation=True, 
-        max_seq_length=512, 
+        max_length=max_seq_length, 
         return_special_tokens_mask=True
     )
 
