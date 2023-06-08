@@ -1,10 +1,17 @@
 
 
-import torch
+from transformers import AutoTokenizer, BertModel
 
-a = torch.empty((2, 2))
-a[0, 0] = 1
-a[0, 1] = 2
-a[1, 0] = 3
-a[1, 1] = 4
-print(a, torch.flatten(a))
+tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
+
+model = BertModel.from_pretrained("bert-base-uncased")
+
+inputs = tokenizer("Hello, my dog is cute", return_tensors="pt")
+
+outputs = model(**inputs)
+
+last_hidden_states = outputs.last_hidden_state
+
+print(inputs)
+print(outputs)
+print(last_hidden_states)

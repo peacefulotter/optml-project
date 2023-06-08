@@ -1,3 +1,18 @@
+"""
+python3 run_language_modelling.py \
+    --model_type bert \
+    --cache_dir ./tmp/hugging_face_cache/ \
+    --output_dir ./tmp/hugging_face_ouput/ \
+    --do_train \
+
+"""
+
+"""
+    --per_device_train_batch_size 64 \
+    --per_device_eval_batch_size 64 \
+"""
+
+
 #!/usr/bin/env python
 # coding=utf-8
 # Copyright 2018 The Google AI Language Team Authors and The HuggingFace Inc. team.
