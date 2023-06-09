@@ -22,7 +22,15 @@ name = config['dataset_name']
 
 
 tokenized_datasets = load_from_disk(f'./save/{path}/{name}/datasets/')
-tokenizer = PreTrainedTokenizerFast(tokenizer_file=f'./save/{path}/{name}/tokenizer/tokenizer.json')
+tokenizer = PreTrainedTokenizerFast(
+    # TODO: make sure these are set for MASKED models
+    # https://huggingface.co/docs/transformers/v4.30.0/en/main_classes/tokenizer#transformers.PreTrainedTokenizerFast
+    # sep_token="",
+    # cls_token="",
+    # mask_token="",
+    tokenizer_file=f'./save/{path}/{name}/tokenizer/tokenizer.json',
+)
+print(tokenizer.sep_token, tokenizer.cls_token, tokenizer.mask_token)
 
 config = BertConfig(vocab_size=len(tokenizer))
 model  = BertForMaskedLM(config) # model.resize_token_embeddings(len(tokenizer))
