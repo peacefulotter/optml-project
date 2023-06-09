@@ -1,3 +1,4 @@
+import json
 import math
 import torch
 import torch.nn.functional as F
@@ -20,17 +21,21 @@ tokenizer_name = config['tokenizer_name']
 path = config['dataset_path']
 name = config['dataset_name']
 
-
+  
+with open(f'./save/{path}/{name}/tokenizer/special_tokens_map.json') as f:
+    special_tokens = json.load(f)
 tokenized_datasets = load_from_disk(f'./save/{path}/{name}/datasets/')
 tokenizer = PreTrainedTokenizerFast(
     # TODO: make sure these are set for MASKED models
     # https://huggingface.co/docs/transformers/v4.30.0/en/main_classes/tokenizer#transformers.PreTrainedTokenizerFast
-    # sep_token="",
-    # cls_token="",
-    # mask_token="",
+    sep_token=special_tokens['sep_token'],
+    cls_token=special_tokens['cls_token'],
+    mask_token=special_tokens['mask_token'],
+    eos_token=special_tokens['eos_token'],
+    pad_token=special_tokens['pad_token'],
     tokenizer_file=f'./save/{path}/{name}/tokenizer/tokenizer.json',
 )
-print(tokenizer.sep_token, tokenizer.cls_token, tokenizer.mask_token)
+print(tokenizer.sep_token, tokenizer.cls_token, tokenizer.mask_token, tokenizer.eos_token, tokenizer.pad_token)
 
 config = BertConfig(vocab_size=len(tokenizer))
 model  = BertForMaskedLM(config) # model.resize_token_embeddings(len(tokenizer))
