@@ -24,6 +24,8 @@ def get_training_corpus():
 # Use pretrained tokenizer and train it on new corpus
 training_corpus = get_training_corpus()
 old_tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
+if not old_tokenizer.is_fast:
+    raise Warning(f'Using pretrained {tokenizer_name} tokenizer is not a FAST tokenizer')
 # TODO: replace 52000 with correct vocab_size, len(old_tokenizer)?
 tokenizer = old_tokenizer.train_new_from_iterator(training_corpus, vocab_size=52000)
 
