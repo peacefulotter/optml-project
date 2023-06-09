@@ -31,11 +31,11 @@ tokenizer = PreTrainedTokenizerFast(
     sep_token=special_tokens['sep_token'],
     cls_token=special_tokens['cls_token'],
     mask_token=special_tokens['mask_token'],
-    eos_token=special_tokens['eos_token'],
+    unk_token=special_tokens['unk_token'],
     pad_token=special_tokens['pad_token'],
     tokenizer_file=f'./save/{path}/{name}/tokenizer/tokenizer.json',
 )
-print(tokenizer.sep_token, tokenizer.cls_token, tokenizer.mask_token, tokenizer.eos_token, tokenizer.pad_token)
+print(tokenizer.sep_token, tokenizer.cls_token, tokenizer.mask_token, tokenizer.unk_token, tokenizer.pad_token)
 
 config = BertConfig(vocab_size=len(tokenizer))
 model  = BertForMaskedLM(config) # model.resize_token_embeddings(len(tokenizer))
