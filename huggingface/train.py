@@ -1,6 +1,7 @@
 import math
 import torch
 import torch.nn.functional as F
+from lion import Lion
 from datasets import load_from_disk
 from transformers import (
     AutoTokenizer, 
@@ -44,6 +45,8 @@ training_args = TrainingArguments(
     eval_accumulation_steps=50,
 )
 
+optimizer = Lion(model.parameters())
+
 trainer = Trainer(
     model,
     training_args,
@@ -51,6 +54,7 @@ trainer = Trainer(
     eval_dataset=tokenized_datasets["validation"],
     data_collator=data_collator,
     tokenizer=tokenizer,
-    compute_metrics=compute_custom_metric
+    compute_metrics=compute_custom_metric,
+    optimizers=(optimizer, None)
 )
 trainer.train()
