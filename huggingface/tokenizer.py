@@ -8,9 +8,9 @@ config = TRAINING_CONFIGS['bert-wikitext']
 tokenizer_name = config['tokenizer_name']
 path = config['dataset_path']
 name = config['dataset_name']
+max_seq_length = config['max_seq_length']
 
 # Load dataset
-max_seq_length = 512 # model dependent
 raw_datasets = load_dataset(path, name)
 column_names = list(raw_datasets["train"].features) # Evaluation: column_names = list(raw_datasets["validation"].features)
 text_column_name = "text" if "text" in column_names else column_names[0]
@@ -72,5 +72,5 @@ tokenized_datasets = tokenized_datasets.map(
     desc=f"Grouping texts in chunks of {max_seq_length}",
 )
 
-tokenizer.save(f'./save/{path}/{name}/tokenizer/tokenizer.json')
+tokenizer.save_pretrained(f'./save/{path}/{name}/tokenizer/') # tokenizer.json
 tokenized_datasets.save_to_disk(f'./save/{path}/{name}/datasets/')
