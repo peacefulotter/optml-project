@@ -4,7 +4,7 @@ import torch.nn.functional as F
 from lion import Lion
 from datasets import load_from_disk
 from transformers import (
-    AutoTokenizer, 
+    PreTrainedTokenizerFast,
     DataCollatorForLanguageModeling,
     BertConfig,
     BertForMaskedLM, 
@@ -12,19 +12,25 @@ from transformers import (
     TrainingArguments
 )
 
-seed = 42
 
-tokenized_datasets = load_from_disk('./datasets/wikitext/wikitext-103-raw-v1')
-tokenizer = AutoTokenizer.from_pretrained("bert-base-cased")
+# Import training configs
+from configs import SEED, TRAINING_CONFIGS
+config = TRAINING_CONFIGS['bert-wikitext']
+tokenizer_name = config['tokenizer_name']
+path = config['dataset_path']
+name = config['dataset_name']
+
+
+tokenized_datasets = load_from_disk(f'./save/{path}/{name}/datasets/')
+tokenizer = PreTrainedTokenizerFast(tokenizer_file=f'./save/{path}/{name}/tokenizer/tokenizer.json')
 
 config = BertConfig(vocab_size=len(tokenizer))
-model = BertForMaskedLM(config)
-# model.resize_token_embeddings(len(tokenizer))
+model  = BertForMaskedLM(config) # model.resize_token_embeddings(len(tokenizer))
 data_collator = DataCollatorForLanguageModeling(
     tokenizer=tokenizer,
     mlm_probability=0.15,
 )
-# optim = Lion
+
 def compute_custom_metric(pred):
     logits = torch.from_numpy(pred.predictions)
     labels = torch.from_numpy(pred.label_ids)
@@ -40,9 +46,9 @@ training_args = TrainingArguments(
     # warmup_steps=500,
     # weight_decay=0.01,
     logging_dir='./bert/logs/',
-    seed=seed,
+    seed=SEED,
     fp16=True,
-    eval_accumulation_steps=50,
+    eval_accumulation_steps=50
 )
 
 optimizer = Lion(model.parameters())
