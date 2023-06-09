@@ -2,12 +2,18 @@ from itertools import chain
 from datasets import load_dataset
 from transformers import AutoTokenizer
 
-raw_datasets = load_dataset('wikitext', 'wikitext-103-raw-v1')
-max_seq_length = 512
+tokenizer_name = 'bert-base-cased'
+path = 'wikitext' # 'openwebtext'
+name = 'wikitext-103-raw-v1'
+
+
+
+max_seq_length = 512 # model dependent
+raw_datasets = load_dataset(path, name)
 column_names = list(raw_datasets["train"].features)
 # Evaluation: column_names = list(raw_datasets["validation"].features)
 text_column_name = "text" if "text" in column_names else column_names[0]
-tokenizer = AutoTokenizer.from_pretrained("bert-base-cased")
+tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
 
 def tokenize_function(examples):
     return tokenizer(
@@ -20,7 +26,7 @@ def tokenize_function(examples):
 tokenized_datasets = raw_datasets.map(
     tokenize_function,
     batched=True,
-    num_proc=4,
+    num_proc=8,
     remove_columns=column_names,
     load_from_cache_file=True,
     desc="Running tokenizer on every text in dataset",
@@ -45,9 +51,9 @@ def group_texts(examples):
 tokenized_datasets = tokenized_datasets.map(
     group_texts,
     batched=True,
-    num_proc=4,
+    num_proc=8,
     load_from_cache_file=True,
     desc=f"Grouping texts in chunks of {max_seq_length}",
 )
 
-tokenized_datasets.save_to_disk('./datasets/wikitext/wikitext-103-raw-v1')
+tokenized_datasets.save_to_disk(f'./datasets/{path}/{name}')
