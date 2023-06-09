@@ -51,16 +51,17 @@ def compute_custom_metric(pred):
     return {'perplexity': math.exp(loss), 'calculated_loss': loss}
 
 training_args = TrainingArguments(
-    output_dir='./bert/output/',
+    output_dir=f'./save/{path}/{name}/output/',
     evaluation_strategy = 'epoch',
     # learning_rate=1e-5,
     per_device_train_batch_size=4,
     per_device_eval_batch_size=4,
     # warmup_steps=500,
     # weight_decay=0.01,
-    logging_dir='./bert/logs/',
+    logging_dir=f'./save/{path}/{name}/logs/',
     seed=SEED,
-    fp16=True,
+    bf16=True,
+    bf16_full_eval=True,
     eval_accumulation_steps=50
 )
 
