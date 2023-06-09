@@ -16,7 +16,8 @@ from transformers import (
 
 # Import training configs
 from configs import SEED, TRAINING_CONFIGS
-config = TRAINING_CONFIGS['bert-wikitext']
+config_name = 'bert-wikitext'
+config = TRAINING_CONFIGS[config_name]
 tokenizer_name = config['tokenizer_name']
 path = config['dataset_path']
 name = config['dataset_name']
@@ -75,6 +76,7 @@ trainer = Trainer(
     data_collator=data_collator,
     tokenizer=tokenizer,
     compute_metrics=compute_custom_metric,
-    optimizers=(optimizer, None)
+    optimizers=(optimizer, None),
+    run_name=f'{config_name}-${optimizer.__class__.__name__}'
 )
 trainer.train()
