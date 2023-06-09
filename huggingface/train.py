@@ -1,27 +1,48 @@
+import math
+import torch
+import torch.nn.functional as F
 from datasets import load_from_disk
 from transformers import (
-    CONFIG_MAPPING,
     AutoTokenizer, 
     DataCollatorForLanguageModeling,
-    AutoModelWithLMHead, 
+    BertConfig,
+    BertForMaskedLM, 
     Trainer, 
     TrainingArguments
 )
 
-max_seq_length = 512
+seed = 42
 
 tokenized_datasets = load_from_disk('./datasets/wikitext/wikitext-103-raw-v1')
 tokenizer = AutoTokenizer.from_pretrained("bert-base-cased")
 
-config = CONFIG_MAPPING['bert']()
-model = AutoModelWithLMHead.from_config(config)
+config = BertConfig(vocab_size=len(tokenizer))
+model = BertForMaskedLM(config)
+# model.resize_token_embeddings(len(tokenizer))
 data_collator = DataCollatorForLanguageModeling(
     tokenizer=tokenizer,
     mlm_probability=0.15,
 )
-# model.resize_token_embeddings(len(tokenizer))
 # optim = Lion
-training_args = TrainingArguments("test-trainer")
+def compute_custom_metric(pred):
+    logits = torch.from_numpy(pred.predictions)
+    labels = torch.from_numpy(pred.label_ids)
+    loss = F.cross_entropy(logits.view(-1, tokenizer.vocab_size), labels.view(-1))
+    return {'perplexity': math.exp(loss), 'calculated_loss': loss}
+
+training_args = TrainingArguments(
+    output_dir='./bert/output/',
+    evaluation_strategy = 'epoch',
+    # learning_rate=1e-5,
+    per_device_train_batch_size=4,
+    per_device_eval_batch_size=4,
+    # warmup_steps=500,
+    # weight_decay=0.01,
+    logging_dir='./bert/logs/',
+    seed=seed,
+    fp16=True,
+    eval_accumulation_steps=50,
+)
 
 trainer = Trainer(
     model,
@@ -30,5 +51,6 @@ trainer = Trainer(
     eval_dataset=tokenized_datasets["validation"],
     data_collator=data_collator,
     tokenizer=tokenizer,
+    compute_metrics=compute_custom_metric
 )
 trainer.train()
