@@ -1,11 +1,13 @@
 # https://github.com/jxbz/signSGD/blob/master/signSGD_zeros.ipynb
-from torch import optim
-class signSGD(optim.Optimizer):
+import torch
+from torch.optim import Optimizer
+
+class SignSGD(Optimizer):
 
     def __init__(self, params, lr=0.01, rand_zero=True):
         defaults = dict(lr=lr)
         self.rand_zero = rand_zero
-        super(signSGD, self).__init__(params, defaults)
+        super(SignSGD, self).__init__(params, defaults)
 
     def step(self, closure=None):
         """Performs a single optimization step.

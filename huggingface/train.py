@@ -2,7 +2,7 @@ import json
 import math
 import torch
 import torch.nn.functional as F
-from lion import Lion
+from optimizers import Lion
 from datasets import load_from_disk
 from transformers import (
     PreTrainedTokenizerFast,
