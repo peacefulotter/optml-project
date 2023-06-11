@@ -62,7 +62,8 @@ training_args = TrainingArguments(
     # weight_decay=0.01,
     logging_dir='./bert/logs/',
     seed=SEED,
-    fp16=True,
+    bf16=True,
+    bf16_full_eval=True,
     eval_accumulation_steps=50
 )
 
