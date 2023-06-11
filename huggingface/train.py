@@ -116,7 +116,7 @@ if __name__ == "__main__":
     torch.cuda.empty_cache()
     gc.collect()
 
-    wandb.init(name="BERT on Wikitext "+ datetime.now().strftime("%m/%d/%Y, %H:%M:%S"))
+    # wandb.init(name="BERT on Wikitext "+ datetime.now().strftime("%m/%d/%Y, %H:%M:%S"))
     wandb.define_metric('train/perplexity')
     wandb.define_metric('train/calculated_loss')  
 
