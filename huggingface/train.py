@@ -3,7 +3,7 @@ import math
 import wandb
 import torch
 import torch.nn.functional as F
-from optimizers import Lion
+from optimizers import Lion, Sophia, SignSGD
 from datasets import load_from_disk
 from transformers import (
     PreTrainedTokenizerFast,
@@ -13,19 +13,22 @@ from transformers import (
     Trainer, 
     TrainingArguments
 )
-
-
+from torch.optim import AdamW
 # Import training configs
 from configs import SEED, TRAINING_CONFIGS
+
+
+
 config = TRAINING_CONFIGS['bert-wikitext']
 tokenizer_name = config['tokenizer_name']
 path = config['dataset_path']
 name = config['dataset_name']
+model_name = config['model']
 
   
-with open(f'./save/{path}/{name}/tokenizer/special_tokens_map.json') as f:
+with open(f'./save/{path}/{name}/tokenizer/{model_name}/special_tokens_map.json') as f:
     special_tokens = json.load(f)
-tokenized_datasets = load_from_disk(f'./save/{path}/{name}/datasets/')
+tokenized_datasets = load_from_disk(f'./save/{path}/{name}/datasets/{model_name}/')
 tokenizer = PreTrainedTokenizerFast(
     # TODO: make sure these are set for MASKED models
     # https://huggingface.co/docs/transformers/v4.30.0/en/main_classes/tokenizer#transformers.PreTrainedTokenizerFast
@@ -34,7 +37,7 @@ tokenizer = PreTrainedTokenizerFast(
     mask_token=special_tokens['mask_token'],
     unk_token=special_tokens['unk_token'],
     pad_token=special_tokens['pad_token'],
-    tokenizer_file=f'./save/{path}/{name}/tokenizer/tokenizer.json',
+    tokenizer_file=f'./save/{path}/{name}/tokenizer/{model_name}/tokenizer.json',
 )
 print(tokenizer.sep_token, tokenizer.cls_token, tokenizer.mask_token, tokenizer.unk_token, tokenizer.pad_token)
 
@@ -65,7 +68,7 @@ training_args = TrainingArguments(
     seed=SEED,
     bf16=True,
     bf16_full_eval=True,
-    eval_accumulation_steps=50
+    eval_accumulation_steps=50,
 )
 
 optimizer = Lion(model.parameters())
