@@ -16,8 +16,13 @@ from transformers import (
 from torch.optim import AdamW
 # Import training configs
 from configs import SEED, TRAINING_CONFIGS
+from datetime import datetime
+import gc
+import os
 
+os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb:21"
 
+wandb.init(name="BERT on Wikitext "+ datetime.now().strftime("%m/%d/%Y, %H:%M:%S"))
 
 config = TRAINING_CONFIGS['bert-wikitext']
 tokenizer_name = config['tokenizer_name']
@@ -41,12 +46,16 @@ tokenizer = PreTrainedTokenizerFast(
 )
 print(tokenizer.sep_token, tokenizer.cls_token, tokenizer.mask_token, tokenizer.unk_token, tokenizer.pad_token)
 
-config = BertConfig(vocab_size=len(tokenizer))
+config = BertConfig(vocab_size=len(tokenizer), #Tiny BERT config
+                        hidden_size=128,
+                        num_hidden_layers=2,
+                        num_attention_heads=2,
+                        intermediate_size=3072)
 model  = BertForMaskedLM(config) # model.resize_token_embeddings(len(tokenizer))
 data_collator = DataCollatorForLanguageModeling(tokenizer)
 
 # wandb.define_metric('train/perplexity')
-# wandb.define_metric('train/calculated_loss')
+# wandb.define_metric('train/calculated_loss')  
 
 def compute_custom_metric(pred):
     logits = torch.from_numpy(pred.predictions)
@@ -57,14 +66,14 @@ def compute_custom_metric(pred):
     return {'train/perplexity': pp, 'calculated_loss': loss}
 
 training_args = TrainingArguments(
-    output_dir='./bert/output/',
+    output_dir=f'./{model_name}/output/',
     evaluation_strategy = 'epoch',
     # learning_rate=1e-5,
-    per_device_train_batch_size=4,
-    per_device_eval_batch_size=4,
+    per_device_train_batch_size=1,
+    per_device_eval_batch_size=1,
     # warmup_steps=500,
     # weight_decay=0.01,
-    logging_dir='./bert/logs/',
+    logging_dir=f'./{model_name}/logs/',
     seed=SEED,
     bf16=True,
     bf16_full_eval=True,
@@ -72,6 +81,7 @@ training_args = TrainingArguments(
 )
 
 optimizer = Lion(model.parameters())
+
 
 trainer = Trainer(
     model,
@@ -83,4 +93,13 @@ trainer = Trainer(
     compute_metrics=compute_custom_metric,
     optimizers=(optimizer, None)
 )
+
+torch.cuda.empty_cache()
+gc.collect()
+
 trainer.train()
+trainer.save_model(f"./{model_name}/output/{optimizer.__class__.__name__}")
+# evaluate the model
+eval_results = trainer.evaluate()
+#print eval results + name of optimizer
+print(f"{optimizer.__class__.__name__} results: {eval_results}")
