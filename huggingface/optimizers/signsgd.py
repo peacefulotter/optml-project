@@ -1,7 +1,15 @@
+# https://github.com/jxbz/signSGD/blob/master/signSGD_zeros.ipynb
+<<<<<<<< HEAD:huggingface/sgd.py
+from torch import optim
+import torch
+class signSGD(optim.Optimizer):
+========
 import torch
 from torch.optim import Optimizer
 
 class SignSGD(Optimizer):
+>>>>>>>> a72160d87eb2199f20c3cd53a7c231624331f06b:huggingface/optimizers/signsgd.py
+
     def __init__(self, params, lr=0.01, rand_zero=True):
         defaults = dict(lr=lr)
         self.rand_zero = rand_zero
