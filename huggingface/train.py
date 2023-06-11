@@ -42,15 +42,16 @@ config = BertConfig(vocab_size=len(tokenizer))
 model  = BertForMaskedLM(config) # model.resize_token_embeddings(len(tokenizer))
 data_collator = DataCollatorForLanguageModeling(tokenizer)
 
-wandb.define_metric('train/perplexity')
-wandb.define_metric('calculated_loss')
+# wandb.define_metric('train/perplexity')
+# wandb.define_metric('train/calculated_loss')
 
 def compute_custom_metric(pred):
     logits = torch.from_numpy(pred.predictions)
     labels = torch.from_numpy(pred.label_ids)
     loss = F.cross_entropy(logits.view(-1, tokenizer.vocab_size), labels.view(-1))
-    # FIXME: wandb.log
-    return {'train/perplexity': math.exp(loss), 'calculated_loss': loss}
+    pp = math.exp(loss)
+    wandb.log({'train/perplexity': pp, 'train/calculated_loss': loss}, commit=False)
+    return {'train/perplexity': pp, 'calculated_loss': loss}
 
 training_args = TrainingArguments(
     output_dir='./bert/output/',
