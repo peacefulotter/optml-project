@@ -3,7 +3,7 @@ from datasets import load_dataset
 from transformers import AutoTokenizer
 import sys
 # Import configs
-from configs import TRAINING_CONFIGS
+from configs import MODEL_CONFIGS, DATASET_CONFIGS
 
 def get_training_corpus():
     return (
@@ -31,17 +31,22 @@ if __name__ == '__main__':
     if len(sys.argv) != 3:
         print("Usage : tokenizer.py <model> <dataset> \nModels : 't5','bert','gpt2' \nDatasets : 'wikitext'")
         sys.exit(1)
-    model = sys.argv[1]
-    dataset = sys.argv[2]
-    config_combination = str(sys.argv[1])+'-'+str(sys.argv[2])
-    if config_combination not in TRAINING_CONFIGS.keys():
-        print("Usage : tokenizer.py <model> <dataset> \nModels : 't5','bert','gpt2' \nDatasets : 'wikitext'")
+    model_name = sys.argv[1]
+    dataset_name = sys.argv[2]
+    if model_name not in MODEL_CONFIGS.keys() or dataset_name not in DATASET_CONFIGS.keys():
+        print(f"""
+            Usage: tokenizer.py <model> <dataset> \n
+            Models: {MODEL_CONFIGS.keys()} \n
+            Datasets: {DATASET_CONFIGS.keys()}
+        """)
         sys.exit(1)
-    config = TRAINING_CONFIGS[config_combination]
-    tokenizer_name = config['tokenizer_name']
-    path = config['dataset_path']
-    name = config['dataset_name']
-    max_seq_length = config['max_seq_length']
+
+    model_config = MODEL_CONFIGS[model_name]
+    dataset_config = DATASET_CONFIGS[dataset_name]
+    tokenizer_name = model_config['tokenizer_name']
+    max_seq_length = model_config['max_seq_length']
+    path = dataset_config['dataset_path']
+    name = dataset_config['dataset_name']
 
     # Load dataset
     raw_datasets = load_dataset(path, name)
@@ -84,5 +89,5 @@ if __name__ == '__main__':
         desc=f"Grouping texts in chunks of {max_seq_length}",
     )
 
-    tokenizer.save_pretrained(f'./save/{path}/{name}/tokenizer/{str(model)}/') # tokenizer.json
-    tokenized_datasets.save_to_disk(f'./save/{path}/{name}/datasets/{str(model)}/')
+    tokenizer.save_pretrained(f'./save/{path}/{name}/tokenizer/{model_name}/') # tokenizer.json
+    tokenized_datasets.save_to_disk(f'./save/{path}/{name}/datasets/{model_name}/')

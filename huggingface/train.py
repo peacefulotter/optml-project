@@ -8,14 +8,12 @@ from datasets import load_from_disk
 from transformers import (
     PreTrainedTokenizerFast,
     DataCollatorForLanguageModeling,
-    BertConfig,
-    BertForMaskedLM, 
     Trainer, 
     TrainingArguments
 )
 from torch.optim import AdamW
 # Import training configs
-from configs import SEED, TRAINING_CONFIGS
+from configs import SEED, MODEL_CONFIGS, DATASET_CONFIGS, OPTIMIZER_CONFIGS
 from datetime import datetime
 import gc, os, sys
 
@@ -34,22 +32,27 @@ if __name__ == "__main__":
     if len(sys.argv) != 4:
         print("Usage : train.py <model> <dataset> <optimizer> \nModels : 't5','bert','gpt2' \nDatasets : 'wikitext'\nOptimizers: 'adam', 'lion', 'sophia', 'signSGD'")
         sys.exit(1)
-    model = sys.argv[1]
-    dataset = sys.argv[2]
+    model_name = sys.argv[1]
+    dataset_name = sys.argv[2]
     optimizer_name = sys.argv[3]
-    config_combination = str(sys.argv[1])+'-'+str(sys.argv[2])
-    if config_combination not in TRAINING_CONFIGS.keys():
-        print("Usage : train.py <model> <dataset> <optimizer> \nModels : 't5','bert','gpt2' \nDatasets : 'wikitext'\nOptimizers: 'adam', 'lion', 'sophia', 'signSGD'")
-        sys.exit(1)
-    if optimizer_name not in ['Adam', 'Lion', 'Sophia', 'SignSGD']:
-        print("Usage : train.py <model> <dataset> <optimizer> \nModels : 't5','bert','gpt2' \nDatasets : 'wikitext'\nOptimizers: 'adam', 'lion', 'sophia', 'signSGD'")
+    if (
+        model_name not in MODEL_CONFIGS.keys() or 
+        dataset_name not in DATASET_CONFIGS.keys() or 
+        optimizer_name not in OPTIMIZER_CONFIGS.keys()
+    ):
+        print(f"""
+            Usage: train.py <model> <dataset> <optimizer> \n
+            Models: {MODEL_CONFIGS.keys()}\n
+            Datasets: {DATASET_CONFIGS.keys()}\n
+            Optimizers: {OPTIMIZER_CONFIGS.keys()}
+        """)
         sys.exit(1)
 
-    config = TRAINING_CONFIGS[config_combination]
-    tokenizer_name = config['tokenizer_name']
-    path = config['dataset_path']
-    name = config['dataset_name']
-    model_name = config['model']
+    model_config = MODEL_CONFIGS[model_name]
+    dataset_config = DATASET_CONFIGS[dataset_name]
+    tokenizer_name = model_config['tokenizer_name']
+    path = dataset_config['dataset_path']
+    name = dataset_config['dataset_name']
 
     with open(f'./save/{path}/{name}/tokenizer/{model_name}/special_tokens_map.json') as f:
         special_tokens = json.load(f)
@@ -66,41 +69,23 @@ if __name__ == "__main__":
     )
     print(tokenizer.sep_token, tokenizer.cls_token, tokenizer.mask_token, tokenizer.unk_token, tokenizer.pad_token)
 
-    if model_name == "bert":
-        config = BertConfig(vocab_size=len(tokenizer), #Tiny BERT config
-                                hidden_size=128,
-                                num_hidden_layers=2,
-                                num_attention_heads=2,
-                                intermediate_size=3072)
-        model  = BertForMaskedLM(config) # model.resize_token_embeddings(len(tokenizer))
-        data_collator = DataCollatorForLanguageModeling(tokenizer)
+    model = model_config['model'](tokenizer)
+    data_collator = DataCollatorForLanguageModeling(tokenizer)
 
-    #TODO : T5
-    # elif model_name == "t5":
-    #     config = T5Config(vocab_size=len(tokenizer), #Tiny BERT config
-    #                             hidden_size=128,
-    #                             num_hidden_layers=2,
-    #                             num_attention_heads=2,
-    #                             intermediate_size=3072)
-    #     model  = T5ForMaskedLM(config) # model.resize_token_embeddings(len(tokenizer))
-    #     data_collator = DataCollatorForLanguageModeling(tokenizer)
-
-    # TODO : Learning rate
     training_args = TrainingArguments(
         output_dir=f'./{model_name}/output/',
-        evaluation_strategy = 'epoch',
-        # learning_rate=1e-5,
-        per_device_train_batch_size=1,
-        per_device_eval_batch_size=1,
-        # warmup_steps=500,
-        # weight_decay=0.01,
         logging_dir=f'./{model_name}/logs/',
+        evaluation_strategy = 'epoch',
+        gradient_accumulation_steps=4,
+        eval_accumulation_steps=4,
+        per_device_train_batch_size=8,
+        per_device_eval_batch_size=8,
         seed=SEED,
         bf16=True,
-        bf16_full_eval=True,
-        eval_accumulation_steps=50,
+        bf16_full_eval=True
     )
 
+    # TODO: learning_rate=?? optim dependant
     optimizer = Lion(model.parameters())
 
     trainer = Trainer(
@@ -117,9 +102,9 @@ if __name__ == "__main__":
     torch.cuda.empty_cache()
     gc.collect()
 
-    wandb.init(name="BERT on Wikitext "+ datetime.now().strftime("%m/%d/%Y, %H:%M:%S"))
-    wandb.define_metric('train/perplexity')
-    wandb.define_metric('train/calculated_loss')  
+    # wandb.init(name="BERT on Wikitext "+ datetime.now().strftime("%m/%d/%Y, %H:%M:%S"))
+    # wandb.define_metric('train/perplexity')
+    # wandb.define_metric('train/calculated_loss')  
 
     trainer.train()
     trainer.save_model(f"./{model_name}/output/{optimizer.__class__.__name__}")
