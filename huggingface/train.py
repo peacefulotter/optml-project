@@ -27,7 +27,6 @@ def compute_custom_metric(pred):
     loss = F.cross_entropy(logits.view(-1, tokenizer.vocab_size), labels.view(-1))
     pp = math.exp(loss)
     wandb.log({'train/perplexity': pp, 'train/calculated_loss': loss}, commit=False)
-    print("Wandb log with custom function !")
     return {'train/perplexity': pp, 'calculated_loss': loss}
 
 if __name__ == "__main__":
@@ -41,7 +40,7 @@ if __name__ == "__main__":
     if config_combination not in TRAINING_CONFIGS.keys():
         print("Usage : train.py <model> <dataset> <optimizer> \nModels : 't5','bert','gpt2' \nDatasets : 'wikitext'\nOptimizers: 'adam', 'lion', 'sophia', 'signSGD'")
         sys.exit(1)
-    if optimizer_name not in ['Adam', 'Lion', 'Sophia', 'SignSGD']:
+    if optimizer_name not in ['adam', 'lion', 'sophia', 'signSGD']:
         print("Usage : train.py <model> <dataset> <optimizer> \nModels : 't5','bert','gpt2' \nDatasets : 'wikitext'\nOptimizers: 'adam', 'lion', 'sophia', 'signSGD'")
         sys.exit(1)
 
