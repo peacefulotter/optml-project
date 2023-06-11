@@ -1,5 +1,6 @@
 # https://github.com/jxbz/signSGD/blob/master/signSGD_zeros.ipynb
 from torch import optim
+import torch
 class signSGD(optim.Optimizer):
 
     def __init__(self, params, lr=0.01, rand_zero=True):

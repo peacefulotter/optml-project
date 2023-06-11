@@ -1,51 +1,15 @@
 from itertools import chain
 from datasets import load_dataset
 from transformers import AutoTokenizer
-
+import sys
 # Import configs
 from configs import TRAINING_CONFIGS
-config = TRAINING_CONFIGS['bert-wikitext']
-tokenizer_name = config['tokenizer_name']
-path = config['dataset_path']
-name = config['dataset_name']
-max_seq_length = config['max_seq_length']
-
-# Load dataset
-raw_datasets = load_dataset(path, name)
-column_names = list(raw_datasets["train"].features) # Evaluation: column_names = list(raw_datasets["validation"].features)
-text_column_name = "text" if "text" in column_names else column_names[0]
 
 def get_training_corpus():
     return (
         raw_datasets["train"][i : i + 1000][text_column_name]
         for i in range(0, len(raw_datasets["train"]), 1000)
     )
-
-# Use pretrained tokenizer and train it on new corpus
-training_corpus = get_training_corpus()
-old_tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
-if not old_tokenizer.is_fast:
-    raise Warning(f'Using pretrained {tokenizer_name} tokenizer is not a FAST tokenizer')
-# TODO: replace 52000 with correct vocab_size, len(old_tokenizer)?
-tokenizer = old_tokenizer.train_new_from_iterator(training_corpus, vocab_size=52000)
-
-def tokenize_function(examples):
-    return tokenizer(
-        examples[text_column_name], 
-        truncation=True, 
-        max_length=max_seq_length, 
-        return_special_tokens_mask=True
-    )
-
-# Tokenize dataset
-tokenized_datasets = raw_datasets.map(
-    tokenize_function,
-    batched=True,
-    num_proc=8,
-    remove_columns=column_names,
-    load_from_cache_file=True,
-    desc="Running tokenizer on every text in dataset",
-)
 
 # Main data processing function that will concatenate all texts from our dataset and generate chunks of
 # max_seq_length.
@@ -63,14 +27,62 @@ def group_texts(examples):
     }
     return result
 
-# Group in batch the tokenized dataset
-tokenized_datasets = tokenized_datasets.map(
-    group_texts,
-    batched=True,
-    num_proc=8,
-    load_from_cache_file=True,
-    desc=f"Grouping texts in chunks of {max_seq_length}",
-)
+if __name__ == '__main__':
+    if len(sys.argv) != 3:
+        print("Usage : tokenizer.py <model> <dataset> \nModels : 't5','bert','gpt2' \nDatasets : 'wikitext'")
+        sys.exit(1)
+    model = sys.argv[1]
+    dataset = sys.argv[2]
+    config_combination = str(sys.argv[1])+'-'+str(sys.argv[2])
+    if config_combination not in TRAINING_CONFIGS.keys():
+        print("Usage : tokenizer.py <model> <dataset> \nModels : 't5','bert','gpt2' \nDatasets : 'wikitext'")
+        sys.exit(1)
+    config = TRAINING_CONFIGS[config_combination]
+    tokenizer_name = config['tokenizer_name']
+    path = config['dataset_path']
+    name = config['dataset_name']
+    max_seq_length = config['max_seq_length']
 
-tokenizer.save_pretrained(f'./save/{path}/{name}/tokenizer/') # tokenizer.json
-tokenized_datasets.save_to_disk(f'./save/{path}/{name}/datasets/')
+    # Load dataset
+    raw_datasets = load_dataset(path, name)
+    column_names = list(raw_datasets["train"].features) # Evaluation: column_names = list(raw_datasets["validation"].features)
+    text_column_name = "text" if "text" in column_names else column_names[0]
+
+    # Use pretrained tokenizer and train it on new corpus
+    training_corpus = get_training_corpus()
+    old_tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
+    if not old_tokenizer.is_fast:
+        raise Warning(f'Using pretrained {tokenizer_name} tokenizer is not a FAST tokenizer')
+    # TODO: replace 52000 with correct vocab_size, len(old_tokenizer)?
+    tokenizer = old_tokenizer.train_new_from_iterator(training_corpus, vocab_size=52000)
+
+    def tokenize_function(examples):
+        return tokenizer(
+            examples[text_column_name], 
+            truncation=True, 
+            max_length=max_seq_length, 
+            return_special_tokens_mask=True
+        )
+
+
+    # Tokenize dataset
+    tokenized_datasets = raw_datasets.map(
+        tokenize_function,
+        batched=True,
+        num_proc=8,
+        remove_columns=column_names,
+        load_from_cache_file=True,
+        desc="Running tokenizer on every text in dataset",
+    )
+
+    # Group in batch the tokenized dataset
+    tokenized_datasets = tokenized_datasets.map(
+        group_texts,
+        batched=True,
+        num_proc=8,
+        load_from_cache_file=True,
+        desc=f"Grouping texts in chunks of {max_seq_length}",
+    )
+
+    tokenizer.save_pretrained(f'./save/{path}/{name}/tokenizer/{str(model)}/') # tokenizer.json
+    tokenized_datasets.save_to_disk(f'./save/{path}/{name}/datasets/{str(model)}/')
