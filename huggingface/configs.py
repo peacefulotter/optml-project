@@ -40,6 +40,10 @@ DATASET_CONFIGS = {
     'wikitext': {
         'dataset_path': 'wikitext',
         'dataset_name': 'wikitext-103-raw-v1'
+    },
+    'wikitext2':{
+        'dataset_path': 'wikitext',
+        'dataset_name': 'wikitext-2-raw-v1'
     }
 }
 

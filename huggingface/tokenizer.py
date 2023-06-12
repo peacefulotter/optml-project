@@ -29,7 +29,11 @@ def group_texts(examples):
 
 if __name__ == '__main__':
     if len(sys.argv) != 3:
-        print("Usage : tokenizer.py <model> <dataset> \nModels : 't5','bert','gpt2' \nDatasets : 'wikitext'")
+        print(f"""
+            Usage: tokenizer.py <model> <dataset> \n
+            Models: {MODEL_CONFIGS.keys()} \n
+            Datasets: {DATASET_CONFIGS.keys()}
+        """)
         sys.exit(1)
     model_name = sys.argv[1]
     dataset_name = sys.argv[2]
