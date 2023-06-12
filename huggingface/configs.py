@@ -1,3 +1,8 @@
+import numpy as np
+from torch.nn import Module
+from torch.optim import AdamW
+from torch.optim.optimizer import Optimizer
+from optimizers import Lion, Sophia, SignSGD
 from transformers import (
     BertConfig,
     BertForMaskedLM, 
@@ -27,13 +32,34 @@ def get_t5_model(**kwargs):
 def not_implemented():
     raise NotImplementedError()
 
+def build_optimizer(Class: Optimizer):
+    def cb(model: Module, **kwargs):
+        return Class(params=model.parameters(), **kwargs)
+    return cb
+
 SEED = 42
 
 OPTIMIZER_CONFIGS = {
-    'adam': { },
-    'lion': { },
-    'sophia': { },
-    'signsgd': { },
+    'adam': { 
+        'build': build_optimizer(AdamW),
+        'lrs': np.linspace(1e-4, 1e-3, 3),
+        'default-lr':  1e-3     
+    },
+    'lion': { 
+        'build': build_optimizer(Lion),
+        'lrs': np.linspace(1e-5, 1e-4, 3),
+        'default-lr':  1e-4  
+    },
+    'sophia': { 
+        'build': build_optimizer(Sophia),
+        'lrs': np.linspace(1e-5, 1e-4, 3),
+        'default-lr':  1e-4  
+    },
+    'signsgd': { 
+        'build': build_optimizer(SignSGD),
+        'lrs': np.linspace(1e-4, 1e-3, 3),
+        'default-lr':  1e-3 
+    },
 }
 
 DATASET_CONFIGS = {
