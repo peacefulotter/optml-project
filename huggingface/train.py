@@ -2,7 +2,7 @@ import json
 import math
 import wandb
 import torch
-import gc, os, sys
+import gc, sys
 import torch.nn.functional as F
 from torch.optim.optimizer import Optimizer
 from datasets import load_from_disk
@@ -11,7 +11,6 @@ from transformers import (
     DataCollatorForLanguageModeling,
     Trainer, 
     TrainingArguments,
-    BertForMaskedLM,
     TrainerCallback,
     TrainerState,
     TrainerControl,
@@ -83,7 +82,6 @@ def train(model_name, dataset_name, optimizer_name, lr=None):
         run_name=f"{model_name}-{dataset_name}-{optimizer_name}-{lr}-{time_now}",
     )
 
-
     trainer = Trainer(
         model,
         training_args,
@@ -91,7 +89,6 @@ def train(model_name, dataset_name, optimizer_name, lr=None):
         eval_dataset=tokenized_datasets["validation"],
         data_collator=data_collator,
         tokenizer=tokenizer,
-        # compute_metrics=compute_metric(tokenizer),
         optimizers=(optimizer, None),
         callbacks=[MetricsCallback, LogCallback],
     )
