@@ -7,6 +7,8 @@ from transformers import (
     BertConfig,
     BertForMaskedLM, 
     T5Config,
+    GPT2Config,
+    GPT2Model
     # T5ForMaskedLM
 )
 
@@ -17,6 +19,15 @@ def get_bert_model(**kwargs):
             **kwargs
         )
         return BertForMaskedLM(config)
+    return cb
+
+def get_gpt2_model(**kwargs):
+    def cb(tokenizer):
+        config = GPT2Config(
+            vocab_size=len(tokenizer),
+            **kwargs
+        )
+        return GPT2Model(config)
     return cb
 
 def get_t5_model(**kwargs):
@@ -87,17 +98,20 @@ MODEL_CONFIGS = {
     'bert': {
         'max_seq_length': 512,
         'tokenizer_name': 'bert-base-cased',
-        'model': get_bert_model()
+        'model': get_bert_model(),
+        'mlm': True
     },
     'gpt2': {
-        'max_seq_length': 512, # TODO: check max_seq_length
+        'max_seq_length': 512,
         'tokenizer_name': 'gpt2',
-        'model': not_implemented # gpt2
+        'model': get_gpt2_model, # gpt2
+        'mlm': False
     },
     't5': {
         'max_seq_length': 512, # TODO: check max_seq_length
         'tokenizer_name': 't5-small',
-        'model': get_t5_model # t5
+        'model': get_t5_model, # t5
+        'mlm': True
     }
 }
 

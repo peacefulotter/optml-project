@@ -10,8 +10,7 @@ from transformers import (
     PreTrainedTokenizerFast,
     DataCollatorForLanguageModeling,
     Trainer, 
-    TrainingArguments,
-    BertForMaskedLM
+    TrainingArguments
 )
 from configs import (
     SEED, 
@@ -20,6 +19,7 @@ from configs import (
     OPTIMIZER_CONFIGS
 )
 from datetime import datetime as dt
+
 
 def compute_metric(tokenizer):
     def inner(pred):
@@ -39,6 +39,7 @@ def train(model_name, dataset_name, optimizer_name, lr=None):
     path = dataset_config['dataset_path']
     name = dataset_config['dataset_name']
 
+
     with open(f'./save/{path}/{name}/tokenizer/{model_name}/special_tokens_map.json') as f:
         special_tokens = json.load(f)
     
@@ -52,25 +53,25 @@ def train(model_name, dataset_name, optimizer_name, lr=None):
         tokenizer_file=f'./save/{path}/{name}/tokenizer/{model_name}/tokenizer.json',
     )
 
+    mlm = model_config['mlm']
     model = model_config['model'](tokenizer)
-    data_collator = DataCollatorForLanguageModeling(tokenizer)
+    data_collator = DataCollatorForLanguageModeling(tokenizer, mlm=mlm)
     lr = lr if lr is not None else optimizer_config['default-lr']
     optimizer: Optimizer = optimizer_config['build'](model, lr=lr)
     time_now = dt.now().strftime("%m/%d/%Y, %H:%M:%S")
 
     training_args = TrainingArguments(
-        output_dir=f'./{model_name}/output/',
-        logging_dir=f'./{model_name}/logs/',
-        # evaluation_strategy = 'steps',
+        output_dir=f'./save/{model_name}/output/',
+        logging_dir=f'./save/{model_name}/logs/',
+        evaluation_strategy = 'steps',
         gradient_accumulation_steps=4,
         eval_accumulation_steps=4,
         per_device_train_batch_size=8,
         per_device_eval_batch_size=8,
         seed=SEED,
-        # bf16=True,
-        # bf16_full_eval=True,
+        bf16=True,
+        bf16_full_eval=True,
         eval_steps = 50,
-        # disable_tqdm=True,
         run_name=f"{model_name}-{dataset_name}-{optimizer_name}-{lr}-{time_now}",
     )
 
@@ -90,24 +91,18 @@ def train(model_name, dataset_name, optimizer_name, lr=None):
     gc.collect()
 
     trainer.train()
-    # trainer.save_model(f"./{model_name}/output/{optimizer.__class__.__name__}")
+    trainer.save_model(f"./save/{model_name}/output/{optimizer.__class__.__name__}")
 
     eval_results = trainer.evaluate()
     print(f"{optimizer.__class__.__name__} {optimizer.defaults['lr']} - results: {eval_results}")
 
 
-def train_on_all(model_name, dataset_name):
-    for optim_name, optimizer in OPTIMIZER_CONFIGS.items():
-        for lr in optimizer['lrs']:
-            train(model_name, dataset_name, optim_name, lr=lr)
-
-
 if __name__ == "__main__":
     def _exit():
         print(f"""
-            Usage: train.py <model> <dataset> <optimizer> \n
-            Models: {MODEL_CONFIGS.keys()}\n
-            Datasets: {DATASET_CONFIGS.keys()}\n
+            Usage: train.py <model> <dataset> <optimizer>
+            Models: {MODEL_CONFIGS.keys()}
+            Datasets: {DATASET_CONFIGS.keys()}
             Optimizers: {OPTIMIZER_CONFIGS.keys()}
             lr: float > 0
         """)
