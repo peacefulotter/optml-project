@@ -8,7 +8,7 @@ from transformers import (
     BertForMaskedLM, 
     T5Config,
     GPT2Config,
-    GPT2Model
+    GPT2LMHeadModel
     # T5ForMaskedLM
 )
 
@@ -27,7 +27,7 @@ def get_gpt2_model(**kwargs):
             vocab_size=len(tokenizer),
             **kwargs
         )
-        return GPT2Model(config)
+        return GPT2LMHeadModel(config)
     return cb
 
 def get_t5_model(**kwargs):
