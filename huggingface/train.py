@@ -10,7 +10,11 @@ from transformers import (
     PreTrainedTokenizerFast,
     DataCollatorForLanguageModeling,
     Trainer, 
-    TrainingArguments
+    TrainingArguments,
+    BertForMaskedLM,
+    TrainerCallback,
+    TrainerState,
+    TrainerControl,
 )
 from configs import (
     SEED, 
@@ -21,15 +25,19 @@ from configs import (
 from datetime import datetime as dt
 
 
-def compute_metric(tokenizer):
-    def inner(pred):
-        logits = torch.from_numpy(pred.predictions)
-        labels = torch.from_numpy(pred.label_ids)
-        loss = F.cross_entropy(logits.view(-1, tokenizer.vocab_size), labels.view(-1))
+class MetricsCallback(TrainerCallback):
+    def on_evaluate(self, args: TrainingArguments, state: TrainerState, control: TrainerControl, **kwargs):
+        loss = kwargs['metrics']['eval_loss']
         pp = math.exp(loss)
-        wandb.log({'train/perplexity': pp, 'train/calculated_loss': loss}, commit=False)
-        return {'train/perplexity': pp, 'calculated_loss': loss}
-    return inner
+        wandb.log({'eval/perplexity': pp}, commit=False)
+
+class LogCallback(TrainerCallback):
+    def on_log(self, args: TrainingArguments, state: TrainerState, control: TrainerControl, **kwargs):
+        logs = state.log_history
+        if 'loss' in logs[-1].keys():
+            loss = logs[-1]['loss']
+            pp = math.exp(loss)
+            wandb.log({'train/perplexity': pp}, commit=False)
 
 def train(model_name, dataset_name, optimizer_name, lr=None):
     model_config = MODEL_CONFIGS[model_name]
@@ -85,6 +93,7 @@ def train(model_name, dataset_name, optimizer_name, lr=None):
         tokenizer=tokenizer,
         # compute_metrics=compute_metric(tokenizer),
         optimizers=(optimizer, None),
+        callbacks=[MetricsCallback, LogCallback],
     )
 
     torch.cuda.empty_cache()
