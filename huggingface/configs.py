@@ -93,19 +93,20 @@ MODEL_CONFIGS = {
             num_hidden_layers=2,
             num_attention_heads=2,
             intermediate_size=3072
-        )
+        ),
+        'mlm': True,
     },
     'bert': {
         'max_seq_length': 512,
         'tokenizer_name': 'bert-base-cased',
         'model': get_bert_model(),
-        'mlm': True
+        'mlm': True,
     },
     'gpt2': {
         'max_seq_length': 512,
         'tokenizer_name': 'gpt2',
-        'model': get_gpt2_model, # gpt2
-        'mlm': False
+        'model': get_gpt2_model(), # gpt2
+        'mlm': False,
     },
     't5': {
         'max_seq_length': 512, # TODO: check max_seq_length

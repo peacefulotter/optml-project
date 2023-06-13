@@ -22,6 +22,7 @@ from configs import (
     OPTIMIZER_CONFIGS
 )
 from datetime import datetime as dt
+import evaluate
 
 
 class MetricsCallback(TrainerCallback):
@@ -38,6 +39,23 @@ class LogCallback(TrainerCallback):
             pp = math.exp(loss)
             wandb.log({'train/perplexity': pp}, commit=False)
 
+accuracy_metric = evaluate.load("accuracy")
+exact_match_metric = evaluate.load("exact_match")
+mean_iou = evaluate.load("mean_iou")
+perplexity = evaluate.load("perplexity", module_type="metric")
+
+def compute_metrics(pred):    
+    predictions = torch.from_numpy(pred.predictions)
+    references = torch.from_numpy(pred.label_ids)
+    results = accuracy_metric.compute(predictions=predictions, references=references)
+    print(results)
+    results = exact_match_metric.compute(predictions=predictions, references=references)
+    print(results)
+    results = mean_iou.compute(predictions=predictions, references=references, num_labels=10, ignore_index=-100)
+    print(results)
+    results = perplexity.compute(predictions=predictions, model_id='gpt2')
+    print(results)
+
 def train(model_name, dataset_name, optimizer_name, lr=None):
     model_config = MODEL_CONFIGS[model_name]
     dataset_config = DATASET_CONFIGS[dataset_name]
@@ -46,19 +64,15 @@ def train(model_name, dataset_name, optimizer_name, lr=None):
     path = dataset_config['dataset_path']
     name = dataset_config['dataset_name']
 
-
     with open(f'./save/{path}/{name}/tokenizer/{model_name}/special_tokens_map.json') as f:
         special_tokens = json.load(f)
     
     tokenized_datasets = load_from_disk(f'./save/{path}/{name}/datasets/{model_name}/')
     tokenizer = PreTrainedTokenizerFast(
-        sep_token=special_tokens['sep_token'],
-        cls_token=special_tokens['cls_token'],
-        mask_token=special_tokens['mask_token'],
-        unk_token=special_tokens['unk_token'],
-        pad_token=special_tokens['pad_token'],
         tokenizer_file=f'./save/{path}/{name}/tokenizer/{model_name}/tokenizer.json',
+        **special_tokens
     )
+    tokenizer.add_special_tokens({'pad_token': '[PAD]'})
 
     mlm = model_config['mlm']
     model = model_config['model'](tokenizer)
@@ -78,7 +92,7 @@ def train(model_name, dataset_name, optimizer_name, lr=None):
         seed=SEED,
         bf16=True,
         bf16_full_eval=True,
-        eval_steps = 50,
+        eval_steps=1,
         run_name=f"{model_name}-{dataset_name}-{optimizer_name}-{lr}-{time_now}",
     )
 
@@ -89,6 +103,7 @@ def train(model_name, dataset_name, optimizer_name, lr=None):
         eval_dataset=tokenized_datasets["validation"],
         data_collator=data_collator,
         tokenizer=tokenizer,
+        compute_metrics=compute_metrics,
         optimizers=(optimizer, None),
         callbacks=[MetricsCallback, LogCallback],
     )
