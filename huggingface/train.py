@@ -19,6 +19,7 @@ from configs import (
     DATASET_CONFIGS,
     OPTIMIZER_CONFIGS
 )
+from datetime import datetime as dt
 
 def compute_metric(tokenizer):
     def inner(pred):
@@ -53,24 +54,26 @@ def train(model_name, dataset_name, optimizer_name, lr=None):
 
     model = model_config['model'](tokenizer)
     data_collator = DataCollatorForLanguageModeling(tokenizer)
+    lr = lr if lr is not None else optimizer_config['default-lr']
+    optimizer: Optimizer = optimizer_config['build'](model, lr=lr)
+    time_now = dt.now().strftime("%m/%d/%Y, %H:%M:%S")
 
     training_args = TrainingArguments(
         output_dir=f'./{model_name}/output/',
         logging_dir=f'./{model_name}/logs/',
-        evaluation_strategy = 'steps',
+        # evaluation_strategy = 'steps',
         gradient_accumulation_steps=4,
         eval_accumulation_steps=4,
         per_device_train_batch_size=8,
         per_device_eval_batch_size=8,
         seed=SEED,
-        bf16=True,
-        bf16_full_eval=True,
+        # bf16=True,
+        # bf16_full_eval=True,
         eval_steps = 50,
-        disable_tqdm=True,
+        # disable_tqdm=True,
+        run_name=f"{model_name}-{dataset_name}-{optimizer_name}-{lr}-{time_now}",
     )
 
-    lr = lr if lr is not None else optimizer_config['default-lr']
-    optimizer: Optimizer = optimizer_config['build'](model, lr=lr)
 
     trainer = Trainer(
         model,
@@ -90,7 +93,7 @@ def train(model_name, dataset_name, optimizer_name, lr=None):
     # trainer.save_model(f"./{model_name}/output/{optimizer.__class__.__name__}")
 
     eval_results = trainer.evaluate()
-    print(f"{optimizer.__class__.__name__} {optimizer.defaults.lr} - results: {eval_results}")
+    print(f"{optimizer.__class__.__name__} {optimizer.defaults['lr']} - results: {eval_results}")
 
 
 def train_on_all(model_name, dataset_name):
