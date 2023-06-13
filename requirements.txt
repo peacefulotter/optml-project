@@ -2,3 +2,6 @@ datasets
 transformers
 accelerate
 wandb
+scikit-learn
+nltk
+rouge_score

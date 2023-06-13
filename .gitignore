@@ -5,3 +5,4 @@ models/
 plots/test.png
 datasets/
 save/
+wandb/

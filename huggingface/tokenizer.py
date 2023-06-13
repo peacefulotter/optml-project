@@ -28,27 +28,27 @@ def group_texts(examples):
     return result
 
 if __name__ == '__main__':
-    if len(sys.argv) != 3:
+    def _exit():
         print(f"""
-            Usage: tokenizer.py <model> <dataset> \n
-            Models: {MODEL_CONFIGS.keys()} \n
+            Usage: tokenizer.py <model> <dataset>
+            Models: {MODEL_CONFIGS.keys()}
             Datasets: {DATASET_CONFIGS.keys()}
         """)
         sys.exit(1)
+
+    if len(sys.argv) != 3:
+        _exit()
+
     model_name = sys.argv[1]
     dataset_name = sys.argv[2]
     if model_name not in MODEL_CONFIGS.keys() or dataset_name not in DATASET_CONFIGS.keys():
-        print(f"""
-            Usage: tokenizer.py <model> <dataset> \n
-            Models: {MODEL_CONFIGS.keys()} \n
-            Datasets: {DATASET_CONFIGS.keys()}
-        """)
-        sys.exit(1)
+        _exit()
 
     model_config = MODEL_CONFIGS[model_name]
     dataset_config = DATASET_CONFIGS[dataset_name]
     tokenizer_name = model_config['tokenizer_name']
     max_seq_length = model_config['max_seq_length']
+    mlm = model_config['mlm']
     path = dataset_config['dataset_path']
     name = dataset_config['dataset_name']
 
@@ -70,7 +70,7 @@ if __name__ == '__main__':
             examples[text_column_name], 
             truncation=True, 
             max_length=max_seq_length, 
-            return_special_tokens_mask=True
+            return_special_tokens_mask=mlm
         )
 
 
