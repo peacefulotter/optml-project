@@ -67,8 +67,8 @@ def train(model_name, dataset_name, optimizer_name, lr=None):
     time_now = dt.now().strftime("%m/%d/%Y, %H:%M:%S")
 
     training_args = TrainingArguments(
-        output_dir=f'./{model_name}/output/',
-        logging_dir=f'./{model_name}/logs/',
+        output_dir=f'./save/{model_name}/output/',
+        logging_dir=f'./save/{model_name}/logs/',
         evaluation_strategy = 'steps',
         gradient_accumulation_steps=4,
         eval_accumulation_steps=4,
