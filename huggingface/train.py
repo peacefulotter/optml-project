@@ -10,7 +10,8 @@ from transformers import (
     PreTrainedTokenizerFast,
     DataCollatorForLanguageModeling,
     Trainer, 
-    TrainingArguments
+    TrainingArguments,
+    BertForMaskedLM
 )
 from configs import (
     SEED, 
@@ -18,8 +19,6 @@ from configs import (
     DATASET_CONFIGS,
     OPTIMIZER_CONFIGS
 )
-
-os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb:21"
 
 def compute_metric(tokenizer):
     def inner(pred):
@@ -65,7 +64,9 @@ def train(model_name, dataset_name, optimizer_name, lr=None):
         per_device_eval_batch_size=8,
         seed=SEED,
         bf16=True,
-        bf16_full_eval=True
+        bf16_full_eval=True,
+        eval_steps = 50,
+        disable_tqdm=True,
     )
 
     lr = lr if lr is not None else optimizer_config['default-lr']
@@ -78,15 +79,15 @@ def train(model_name, dataset_name, optimizer_name, lr=None):
         eval_dataset=tokenized_datasets["validation"],
         data_collator=data_collator,
         tokenizer=tokenizer,
-        compute_metrics=compute_metric(tokenizer),
-        optimizers=(optimizer, None)
+        # compute_metrics=compute_metric(tokenizer),
+        optimizers=(optimizer, None),
     )
 
     torch.cuda.empty_cache()
     gc.collect()
 
     trainer.train()
-    trainer.save_model(f"./{model_name}/output/{optimizer.__class__.__name__}")
+    # trainer.save_model(f"./{model_name}/output/{optimizer.__class__.__name__}")
 
     eval_results = trainer.evaluate()
     print(f"{optimizer.__class__.__name__} {optimizer.defaults.lr} - results: {eval_results}")
