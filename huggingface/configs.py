@@ -54,7 +54,7 @@ OPTIMIZER_CONFIGS = {
     'adam': { 
         'build': build_optimizer(AdamW),
         'lrs': np.linspace(1e-4, 1e-3, 3),
-        'default-lr':  1e-3     
+        'default-lr':  2e-3     
     },
     'lion': { 
         'build': build_optimizer(Lion),

@@ -7,6 +7,7 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from torch.optim.optimizer import Optimizer
 from datasets import load_from_disk
+from huggingface_hub import login
 from transformers import (
     PreTrainedTokenizerFast,
     DataCollatorForLanguageModeling,
@@ -51,12 +52,12 @@ def _prepare_input(data):
 def get_metrics_callback(dataset_tr, dataset_ev, data_collator):
     batch_size = 32
     def build_dataloader(dataset):
-        return DataLoader(dataset, batch_size=batch_size, collate_fn=data_collator, num_workers=1), len(dataset)
+        return DataLoader(dataset, batch_size=batch_size, collate_fn=data_collator, num_workers=8), len(dataset)
 
     dataloader_tr = build_dataloader(dataset_tr)
     dataloader_ev = build_dataloader(dataset_ev)
 
-    def _evaluate(training: bool, **kwargs):
+    def on_evaluate(training: bool, **kwargs):
         name = 'training' if training else 'eval'
         dataloader, len_dataset = dataloader_tr if training else dataloader_ev
         model = kwargs['model']
@@ -90,13 +91,15 @@ def get_metrics_callback(dataset_tr, dataset_ev, data_collator):
             'bleu': bleu.compute(predictions=pred_str, references=[[seq] for seq in label_str])['bleu'],
             'perplexity': perplexity.compute(predictions=pred_str, model_id='gpt2')['mean_perplexity']
         }
-        wandb.log( { f'{name}/{k}': v for k, v in res.items() } )
+        res = { f'{name}/{k}': v for k, v in res.items() }
+        print(res)
+        wandb.log( res, commit=False )
     
     class MetricsCallback(TrainerCallback):
         @torch.no_grad()
         def on_evaluate(self, args: TrainingArguments, state: TrainerState, control: TrainerControl, **kwargs):
             # _evaluate(True, **kwargs)
-            _evaluate(False, **kwargs)
+            on_evaluate(False, **kwargs)
             
     return MetricsCallback
 
@@ -146,6 +149,8 @@ def compute_metrics(tokenizer):
 #     return pred_ids, labels
 
 def train(model_name, dataset_name, optimizer_name, lr=None):
+    # login()
+
     model_config = MODEL_CONFIGS[model_name]
     dataset_config = DATASET_CONFIGS[dataset_name]
     optimizer_config = OPTIMIZER_CONFIGS[optimizer_name]
@@ -169,11 +174,13 @@ def train(model_name, dataset_name, optimizer_name, lr=None):
     data_collator = DataCollatorForLanguageModeling(tokenizer, mlm=mlm)
     lr = lr if lr is not None else optimizer_config['default-lr']
     optimizer: Optimizer = optimizer_config['build'](model, lr=lr)
+    
     time_now = dt.now().strftime("%m/%d/%Y, %H:%M:%S")
+    save_path = f'./save/{model_name}/{name}/{path}/{optimizer_name}/{lr}/{time_now}'
 
     training_args = TrainingArguments(
-        output_dir=f'./save/{model_name}/output/',
-        logging_dir=f'./save/{model_name}/logs/',
+        output_dir=f'{save_path}/output/',
+        logging_dir=f'{save_path}/logs/',
         evaluation_strategy = 'steps',
         gradient_accumulation_steps=4,
         per_device_train_batch_size=32,
@@ -181,6 +188,7 @@ def train(model_name, dataset_name, optimizer_name, lr=None):
         seed=SEED,
         bf16=True,
         bf16_full_eval=True,
+        # push_to_hub=True,
         eval_steps=100,
         run_name=f"{model_name}-{dataset_name}-{optimizer_name}-{lr}-{time_now}",
         # report_to='none'
@@ -209,10 +217,11 @@ def train(model_name, dataset_name, optimizer_name, lr=None):
     gc.collect()
 
     trainer.train()
-    trainer.save_model(f"./save/{model_name}/output/{optimizer.__class__.__name__}")
+    trainer.save_model(f"{save_path}/model/")
+    # trainer.push_to_hub()
 
     eval_results = trainer.evaluate()
-    print(f"{optimizer.__class__.__name__} {optimizer.defaults['lr']} - results: {eval_results}")
+    print(f"{optimizer_name} {optimizer.defaults['lr']} - results: {eval_results}")
 
 
 if __name__ == "__main__":
